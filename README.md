@@ -33,6 +33,8 @@ parameterized-Jenkins-pipeline/
 │       └── Dockerfile
 
 
-
 ```
 
+## Architecture Overview
+
+![](./docs/support/diagram-export-6-2-2025-4_00_03-PM.png)
