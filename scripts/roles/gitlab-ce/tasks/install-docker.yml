@@ -1,0 +1,14 @@
+---
+- name: Include Docker installation tasks
+  include_tasks: "{{ role_path }}/../common/tasks/docker-rhel.yml"
+
+- name: Synchronize GitLab config folder
+  synchronize:
+    src: "{{ role_path }}/files/"
+    dest: "/home/{{ ansible_user }}/gitlab/"
+    recursive: yes
+
+- name: Start SonarQube Compose
+  command:
+    cmd: "docker compose -f docker-compose.gitlab.yml up -d"
+    chdir: "/home/{{ ansible_user }}/gitlab"

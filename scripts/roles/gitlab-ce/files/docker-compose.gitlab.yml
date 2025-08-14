@@ -1,0 +1,20 @@
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    container_name: gitlab
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /srv/gitlab/config:/etc/gitlab
+      - /srv/gitlab/logs:/var/log/gitlab
+      - /srv/gitlab/data:/var/opt/gitlab
+    environment:
+      EXTERNAL_URL: "http://gitlab-ce.ddns.net"
+    networks:
+      - gitlab_network
+
+networks:
+  gitlab_network:
+    driver: bridge

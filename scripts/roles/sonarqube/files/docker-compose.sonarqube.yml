@@ -1,0 +1,48 @@
+services:
+  sonarqube:
+    image: sonarqube:community
+    container_name: sonarqube
+    ports:
+      - "9000:9000"
+    deploy:
+      resources:
+        limits:
+          memory: 3GB
+    environment:
+      - SONAR_JDBC_URL=jdbc:postgresql://db:5432/sonar
+      - SONAR_JDBC_USERNAME=sonar
+      - SONAR_JDBC_PASSWORD=sonar
+    volumes:
+      - /srv/sonarqube/plugins:/opt/sonarqube/extensions/plugins
+    depends_on:
+      - db
+    restart: unless-stopped
+    networks:
+      - sonar_network
+
+  db:
+    image: postgres:13
+    container_name: sonarqube_db
+    ports:
+      - "5432:5432"
+    deploy:
+      resources:
+        limits:
+          memory: 512MB
+    environment:
+      - POSTGRES_USER=sonar
+      - POSTGRES_PASSWORD=sonar
+      - POSTGRES_DB=sonar
+    volumes:
+        - sonar_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - sonar_network
+
+volumes:
+    sonar_db_data:
+      driver: local
+      
+networks:
+  sonar_network:
+    driver: bridge

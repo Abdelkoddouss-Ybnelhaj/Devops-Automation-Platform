@@ -1,0 +1,50 @@
+---
+- name: Ensure curl is installed
+  package:
+    name: curl
+    state: present
+
+- name: Add GitLab Runner repository
+  shell: |
+    curl -L https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.rpm.sh | bash
+  args:
+    creates: /etc/yum.repos.d/runner_gitlab-runner.repo
+
+- name: Install GitLab Runner
+  package:
+    name: gitlab-runner
+    state: present
+
+- name: Enable GitLab Runner service
+  systemd:
+    name: gitlab-runner
+    enabled: yes
+    state: started
+
+- name: Verify GitLab Runner installation
+  command: gitlab-runner --version
+  register: runner_version
+
+- name: Show GitLab Runner version
+  debug:
+    var: runner_version.stdout
+
+- name: Include Docker installation tasks
+  include_tasks: "{{ role_path }}/../common/tasks/docker-rhel.yml"
+
+- name: Add GitLab Runner user to docker group
+  user:
+    name: gitlab-runner
+    group: docker
+    append: yes
+
+- name: Register GitLab Runner service
+  shell: |
+        gitlab-runner register --non-interactive \
+          --url {{ gitlab_url }} \
+          --token {{ gitlab_runner_token }} \
+          --executor docker \
+          --description "RHEL Runner" \
+          --docker-image "docker:latest" \
+  args:
+    creates: /etc/gitlab-runner/config.toml

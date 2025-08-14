@@ -1,0 +1,7 @@
+- name: Include OS installation tasks
+  include_tasks: install-os.yml
+  when: install_mode == "os"
+
+- name: Include Docker installation tasks
+  include_tasks: install-docker.yml
+  when: install_mode == "docker"

@@ -1,0 +1,14 @@
+---
+- name: Include Docker installation tasks
+  include_tasks: "{{ role_path }}/../common/tasks/docker-rhel.yml"
+
+- name: Synchronize Nexus config folder
+  synchronize:
+    src: "{{ role_path }}/files/"
+    dest: "/home/{{ ansible_user }}/nexus/"
+    recursive: yes
+
+- name: Start Nexus Compose
+  command:
+    cmd: "docker compose -f docker-compose.nexus.yml up -d"
+    chdir: "/home/{{ ansible_user }}/nexus"

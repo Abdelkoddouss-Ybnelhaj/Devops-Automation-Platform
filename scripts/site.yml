@@ -1,0 +1,29 @@
+# - name: Configure SonarQube server
+#   hosts: sonarqube_server
+#   become: true
+#   roles:
+#     - sonarqube
+
+# - name: Configure Nexus server
+#   hosts: nexus_server
+#   become: true
+#   roles:
+#     - nexus
+
+# - name: Configure Jenkins server
+#   hosts: jenkins_server
+#   become: true
+#   roles:
+#     - jenkins
+
+# - name: Configure GitLab server
+#   hosts: gitlab_server
+#   become: true
+#   roles:
+#     - gitlab-ce
+
+- name: Configure GitLab runner
+  hosts: gitlab_runner
+  become: true
+  roles:
+    - gitlab-runner

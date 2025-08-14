@@ -1,0 +1,26 @@
+---
+- name: Wait for Nexus to initialize
+  uri:
+    url: "http://localhost:8081"
+    status_code: 200
+  register: nexus_up
+  until: nexus_up.status == 200
+  retries: 20
+  delay: 15
+
+- name: Get Nexus default admin password
+  command: "docker exec -it nexus cat /nexus-data/admin.password"
+  register: nexus_admin_pass
+  changed_when: false
+
+- name: Change Nexus admin password
+  uri:
+    url: "http://localhost:8081/service/rest/v1/security/users/admin/change-password"
+    method: PUT
+    user: admin
+    password: "{{ nexus_admin_pass.stdout }}"
+    force_basic_auth: yes
+    headers:
+      Content-Type: "text/plain"
+    body: "{{ nexus_new_password }}"
+    status_code: 204

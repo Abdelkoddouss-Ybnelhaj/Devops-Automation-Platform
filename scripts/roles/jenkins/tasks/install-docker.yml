@@ -1,0 +1,28 @@
+---
+# - name: Include Docker installation tasks
+#   include_tasks: "{{ role_path }}/../common/tasks/docker.yml"
+
+- name: Synchronize Jenkins config folder
+  synchronize:
+    src: "{{ role_path }}/files/"
+    dest: "/home/{{ ansible_user }}/jenkins/"
+    recursive: yes
+
+- name: Stop Jenkins Compose
+  shell: "docker-compose -f docker-compose.jenkins.yml down -v && docker rmi -f jenkins-jenkins:latest || true"
+  args:
+    chdir: "/home/{{ ansible_user }}/jenkins"
+
+- name: Start Jenkins Compose
+  command:
+    cmd: "docker-compose -f docker-compose.jenkins.yml up -d"
+    chdir: "/home/{{ ansible_user }}/jenkins"
+  environment:
+    JENKINS_USER: "{{ jenkins_user }}"
+    JENKINS_PASSWORD: "{{ jenkins_pass }}"
+    # SONARQUBE_TOKEN: "{{ hostvars['sonarqube_server']['sonarqube_token_global'] }}"
+    # SONARQUBE_SERVER: "http://{{ hostvars['sonarqube_server']['ansible_host'] }}:9000"
+    SHARED_LIBRARY_GIT_REPO_USER: "{{ shared_library_git_repo_user }}"
+    SHARED_LIBRARY_GIT_REPO_PASS: "{{ shared_library_git_repo_pass }}"
+    SMTP_USER: "{{ smtp_user }}"
+    SMTP_PASS: "{{ smtp_pass }}"

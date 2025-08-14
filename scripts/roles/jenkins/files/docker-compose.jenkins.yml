@@ -1,0 +1,34 @@
+services:
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jenkins
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /home/azureuser/jenkins/jenkins-casc.yaml:/var/jenkins_home/jenkins-casc.yaml
+    environment:
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false -Dio.jenkins.plugins.casc.ConfigurationAsCode.initialDelay=7000
+      - CASC_JENKINS_CONFIG=/var/jenkins_home/jenkins-casc.yaml
+      - JENKINS_USER=${JENKINS_USER}
+      - JENKINS_PASSWORD=${JENKINS_PASSWORD}
+      - SONARQUBE_TOKEN=${SONARQUBE_TOKEN}
+      - SONARQUBE_SERVER=${SONARQUBE_SERVER}
+      - SHARED_LIBRARY_GIT_REPO_USER=${SHARED_LIBRARY_GIT_REPO_USER}
+      - SHARED_LIBRARY_GIT_REPO_PASS=${SHARED_LIBRARY_GIT_REPO_PASS}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+    networks:
+      - jenkins_network
+
+volumes:
+    jenkins_home:
+      driver: local
+    
+networks:
+  jenkins_network:
+    driver: bridge

@@ -1,0 +1,56 @@
+# - name: Wait for SonarQube to be up and healthy
+#   command: >
+#     curl -s -u {{ sonarqube_admin_user }}:{{ sonarqube_default_admin_pass }} http://localhost:9000/api/system/health
+#   register: sonarqube_health
+#   retries: 20
+#   delay: 10
+#   until: >
+#     sonarqube_health.stdout != "" and
+#     (sonarqube_health.stdout | from_json) is mapping and
+#     ('health' in (sonarqube_health.stdout | from_json)) and
+#     ((sonarqube_health.stdout | from_json).health == "GREEN")
+
+# - name: Show SonarQube health status
+#   debug:
+#     msg: "SonarQube health is {{ (sonarqube_health.stdout | from_json).health }}"
+
+# - name: Change SonarQube Password
+#   command: >
+#     curl -v -u '{{ sonarqube_admin_user }}:{{ sonarqube_default_admin_pass }}'
+#     -X POST
+#     -d "login={{ sonarqube_admin_user }}"
+#     -d "password={{ sonarqube_admin_pass }}"
+#     -d "previousPassword={{ sonarqube_default_admin_pass }}"
+#     http://localhost:9000/api/users/change_password
+
+# - name: Call SonarQube API to generate token
+#   ansible.builtin.command: >
+#     curl -u '{{ sonarqube_admin_user }}:{{ sonarqube_admin_pass }}'
+#     -X POST
+#     -d "name=jenkins-token"
+#     -d "type=GLOBAL_ANALYSIS_TOKEN"
+#     http://{{ ansible_host }}:9000/api/user_tokens/generate
+#   register: sonarqube_token
+
+# - name: Save SonarQube token globally
+#   set_fact:
+#     sonarqube_token_global: "{{ (sonarqube_token.stdout | from_json).token }}"
+
+# - name: Create SonarQube Webhook
+#   uri:
+#     url: "http://{{ ansible_host }}:9000/api/webhooks/create"
+#     method: POST
+#     user: "{{ sonarqube_admin_user }}"
+#     password: "{{ sonarqube_admin_pass }}"
+#     force_basic_auth: yes
+#     status_code: 200
+#     body_format: form-urlencoded
+#     body:
+#       name: "jenkins-webhook"
+#       url: "http://{{ hostvars['jenkins_server']['ansible_host'] }}:8080/sonarqube-webhook/"
+#     return_content: yes
+#   register: webhook_creation
+
+# - name: Show webhook creation response
+#   debug:
+#     var: webhook_creation.json

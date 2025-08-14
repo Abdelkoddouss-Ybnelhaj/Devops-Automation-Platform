@@ -1,0 +1,28 @@
+- name: Update the system
+  command: yum update -y
+
+- name: Install GitLab dependencies
+  command: yum install -y curl policycoreutils openssh-server
+
+- name: Start SSH if not enabled
+  service:
+    name: sshd
+    state: started
+    enabled: true
+
+- name: Configure firewall to allow HTTP and SSH
+  shell: |
+    firewall-cmd --permanent --add-service=http
+    firewall-cmd --permanent --add-service=https
+    firewall-cmd --permanent --add-service=ssh
+    firewall-cmd --reload
+
+- name: Add GitLab CE Official Repository
+  shell: |
+    curl https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.rpm.sh | sudo bash
+
+- name: Install GitLab CE
+  command: sudo yum install -y gitlab-ce
+
+- name: Configure GitLab
+  command: gitlab-ctl reconfigure

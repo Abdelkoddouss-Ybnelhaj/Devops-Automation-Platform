@@ -1,0 +1,143 @@
+---
+- name: Update the system
+  command: dnf update -y
+
+- name: Update the maximum number of memory map areas
+  shell: |
+    echo "vm.max_map_count=262144" | sudo tee -a /etc/sysctl.conf
+    sudo sysctl -p
+    
+- name: Install Java 17
+  dnf:
+    name:
+      - java-17-openjdk
+      - java-17-openjdk-devel
+    state: present
+
+- name: Install SonarQube dependencies
+  dnf:
+    name:
+      - wget
+      - unzip
+    state: present
+
+- name: Install PostgreSQL
+  dnf:
+    name: "@postgresql:13"
+    state: present
+
+- name: Initialize PostgreSQL database (only if not initialized)
+  command: postgresql-setup --initdb
+  args:
+    creates: /var/lib/pgsql/data/PG_VERSION
+
+- name: Start and enable PostgreSQL service
+  systemd:
+    name: postgresql
+    state: started
+    enabled: true
+
+- name: Install psycopg2 for PostgreSQL modules
+  dnf:
+    name: python3-psycopg2
+    state: present
+
+- name: Create SonarQube database
+  become_user: postgres
+  postgresql_db:
+    name: sonarqube
+
+- name: Create SonarQube database user
+  become_user: postgres
+  postgresql_user:
+    name: sonar
+    password: "{{ sonarqube_db_password }}"
+
+- name: Grant all privileges on sonarqube database to sonar user
+  become_user: postgres
+  community.postgresql.postgresql_privs:
+    database: sonarqube
+    roles: sonar
+    type: database
+    privs: ALL
+    state: present
+
+- name: Download SonarQube
+  get_url:
+    url: "{{ sonarqube_url }}"
+    dest: "/tmp/{{ sonarqube_zip }}"
+    mode: '0644'
+
+- name: Unzip SonarQube
+  unarchive:
+    src: "/tmp/{{ sonarqube_zip }}"
+    dest: /opt
+    remote_src: yes
+
+- name: Rename SonarQube directory
+  command: mv /opt/sonarqube-{{ sonarqube_version }} {{ sonarqube_install_dir }}
+
+- name: Create sonarqube user
+  user:
+    name: sonarqube
+    system: yes
+    shell: /bin/false
+
+- name: Change ownership of SonarQube directory
+  file:
+    path: "{{ sonarqube_install_dir }}"
+    state: directory
+    recurse: yes
+    owner: sonarqube
+    group: sonarqube
+
+- name: Configure SonarQube database connection
+  lineinfile:
+    path: "{{ sonarqube_install_dir }}/conf/sonar.properties"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: present
+  loop:
+    - { regexp: '^#sonar.jdbc.username=', line: "sonar.jdbc.username=sonar" }
+    - { regexp: '^#sonar.jdbc.password=', line: "sonar.jdbc.password={{ sonarqube_db_password }}" }
+    - { regexp: '^#sonar.jdbc.url=', line: "sonar.jdbc.url=jdbc:postgresql://localhost:5432/sonarqube" }
+
+
+- name: Create SonarQube systemd service
+  copy:
+    dest: /etc/systemd/system/sonarqube.service
+    content: |
+      [Unit]
+      Description=SonarQube service
+      After=syslog.target network.target
+
+      [Service]
+      Type=forking
+      ExecStart={{ sonarqube_install_dir }}/bin/linux-x86-64/sonar.sh start
+      ExecStop={{ sonarqube_install_dir }}/bin/linux-x86-64/sonar.sh stop
+      User=sonarqube
+      Group=sonarqube
+      Restart=always
+      LimitNOFILE=65536
+      LimitNPROC=4096
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+
+- name: Start and enable SonarQube service
+  systemd:
+    name: sonarqube
+    state: started
+    enabled: yes
+
+# - name: Open firewall port 9000 for SonarQube (if firewalld is running)
+#   firewalld:
+#     port: 9000/tcp
+#     permanent: true
+#     state: enabled
+#     immediate: yes
+#   when: ansible_facts.services['firewalld'].state == "running"

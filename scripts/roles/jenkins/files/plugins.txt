@@ -1,0 +1,14 @@
+blueocean
+workflow-aggregator
+pipeline-stage-view
+git
+credentials
+docker-plugin
+sonar
+sonar-quality-gates
+email-ext
+configuration-as-code
+pipeline-github-lib
+ssh-agent
+matrix-auth
+dependency-check-jenkins-plugin

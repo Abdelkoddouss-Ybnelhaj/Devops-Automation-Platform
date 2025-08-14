@@ -1,0 +1,95 @@
+---
+- name: Wait for Jenkins to be fully ready (check API crumb endpoint)
+  uri:
+    url: "http://{{ ansible_host }}:{{ jenkins_port }}/crumbIssuer/api/json"
+    user: "{{ jenkins_user }}"
+    password: "{{ jenkins_pass }}"
+    force_basic_auth: yes
+    status_code: 200
+    validate_certs: no
+  register: jenkins_api_status
+  until: jenkins_api_status.status == 200
+  retries: 10
+  delay: 1
+
+
+# - name: Get Jenkins crumb
+#   uri:
+#     url: "http://{{ ansible_host }}:{{ jenkins_port }}/crumbIssuer/api/json"
+#     url_username: "{{ jenkins_user }}"
+#     url_password: "{{ jenkins_pass }}"
+#     force_basic_auth: yes
+#     return_content: yes
+#     status_code: 200
+#     validate_certs: no
+#     headers:
+#       Accept: "application/json"
+#   register: crumb_response
+
+# - name: Set crumb variables
+#   set_fact:
+#     jenkins_crumb: "{{ crumb_response.json.crumb }}"
+#     jenkins_crumb_field: "{{ crumb_response.json.crumbRequestField }}"
+
+- name: Generate Jenkins API token with cookie jar and crumb
+  vars:
+    token_name: "jenkins-token"
+  shell: |
+    COOKIE_JAR=$(mktemp)
+    CRUMB_JSON=$(curl -s -c "$COOKIE_JAR" -u {{ jenkins_user }}:{{ jenkins_pass }} "http://{{ ansible_host }}:{{ jenkins_port }}/crumbIssuer/api/json")
+    CRUMB=$(echo "$CRUMB_JSON" | jq -r '.crumb')
+    CRUMB_FIELD=$(echo "$CRUMB_JSON" | jq -r '.crumbRequestField')
+
+    curl -s -X POST "http://{{ ansible_host }}:{{ jenkins_port }}/user/{{ jenkins_user }}/descriptorByName/jenkins.security.ApiTokenProperty/generateNewToken" \
+      -H "Content-Type: application/x-www-form-urlencoded" \
+      -H "$CRUMB_FIELD: $CRUMB" \
+      -b "$COOKIE_JAR" \
+      -u {{ jenkins_user }}:{{ jenkins_pass }} \
+      --data-urlencode "newTokenName={{ token_name }}" \
+  register: jenkins_token_response
+  delegate_to: localhost
+
+- name: Show generated token response
+  debug:
+    var: jenkins_token_response.stdout
+
+- name: Extraire le token Jenkins (exemple)
+  set_fact:
+    jenkins_token: "{{ jenkins_token_response.stdout | from_json | json_query('data.tokenValue') }}"
+
+- name: Create Jenkins Folder Job
+  shell: |
+    curl -X POST "http://{{ ansible_host }}:{{ jenkins_port }}/createItem?name=Test" \
+      --header "Content-Type: application/xml" \
+      --data-binary @folder-job-config.xml \
+      --user {{ jenkins_user }}:{{ jenkins_token }}
+  args:
+    chdir: "/home/{{ ansible_user }}/jenkins"
+  register: folder_creation
+  failed_when: folder_creation.rc != 0
+
+- name: Change Jenkins Job Ownership
+  shell: |
+    docker exec -it jenkins chown -R jenkins:jenkins /var/jenkins_home/jobs/Test
+
+- name: Create Dev Pipeline Job
+  shell: |
+    curl -X POST "http://{{ ansible_host }}:{{ jenkins_port }}/job/Test/createItem?name=Dev-Pipeline" \
+      --header "Content-Type: application/xml" \
+      --data-binary @pipeline-dev-job-config.xml \
+      --user {{ jenkins_user }}:{{ jenkins_token }}
+  args:
+    chdir: "/home/{{ ansible_user }}/jenkins"
+  register: dev_pipeline_creation
+  failed_when: dev_pipeline_creation.rc != 0
+
+- name: Create Test Pipeline Job
+  shell: |
+    curl -X POST "http://{{ ansible_host }}:{{ jenkins_port }}/job/Test/createItem?name=Test-Pipeline" \
+      --header "Content-Type: application/xml" \
+      --data-binary @pipeline-test-job-config.xml \
+      --user {{ jenkins_user }}:{{ jenkins_token }}
+  args:
+    chdir: "/home/{{ ansible_user }}/jenkins"
+  register: test_pipeline_creation
+  failed_when: test_pipeline_creation.rc != 0

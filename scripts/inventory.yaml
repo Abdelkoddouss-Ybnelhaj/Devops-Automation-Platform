@@ -1,0 +1,36 @@
+all:
+  vars:
+    ansible_user: azureuser
+    ansible_ssh_private_key_file: ~/.ssh/id_rsa
+    ansible_ssh_extra_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+    token_path: "{{ role_path }}/../common/files/sonarqube_token.txt"
+  
+  hosts:
+    gitlab_server:
+      ansible_host: 
+    jenkins_server:
+      ansible_host: 172.191.141.123
+      jenkins_user: admin
+      jenkins_pass: 123456
+      jenkins_port: 8080
+      shared_library_git_repo_user: 
+      shared_library_git_repo_pass: 
+      smtp_user: 
+      smtp_pass:
+    sonarqube_server:
+      ansible_host: 
+      sonarqube_admin_pass: 
+      sonarqube_admin_user: admin
+      sonarqube_default_admin_pass: admin
+      sonarqube_db_password: sonar
+      sonarqube_version: "10.5.1.90531"
+      sonarqube_zip: "sonarqube-{{ sonarqube_version }}.zip"
+      sonarqube_url: "https://binaries.sonarsource.com/Distribution/sonarqube/{{ sonarqube_zip }}"
+      sonarqube_install_dir: "/opt/sonarqube"
+    nexus_server:
+      ansible_host: 
+      nexus_new_password: 
+    gitlab_runner:
+      ansible_host: 
+      gitlab_runner_token: YOUR_GITLAB_RUNNER_TOKEN
+      gitlab_url: "https://gitlab.com"

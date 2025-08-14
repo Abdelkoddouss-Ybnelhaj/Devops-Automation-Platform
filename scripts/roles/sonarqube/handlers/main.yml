@@ -1,0 +1,15 @@
+- name: Stop SonarQube Compose
+  command:
+    cmd: "docker-compose -f docker-compose.sonarqube.yml down"
+    chdir: "/home/{{ ansible_user }}/sonarqube"
+
+- name: Remove SonarQube Compose
+  command:
+    cmd: "docker-compose -f docker-compose.sonarqube.yml down -v"
+    chdir: "/home/{{ ansible_user }}/sonarqube"
+
+- name: Restart SonarQube Compose
+  command:
+    cmd: "docker-compose -f docker-compose.sonarqube.yml restart"
+    chdir: "/home/{{ ansible_user }}/sonarqube"
+

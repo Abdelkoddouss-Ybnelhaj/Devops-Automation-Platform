@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<com.cloudbees.hudson.plugins.folder.Folder plugin="cloudbees-folder@6.15">
+  <description>My folder for pipelines</description>
+  <properties/>
+  <views>
+    <hudson.model.AllView>
+      <owner class="com.cloudbees.hudson.plugins.folder.Folder" reference="../../.."/>
+      <name>all</name>
+      <filterExecutors>false</filterExecutors>
+      <filterQueue>false</filterQueue>
+      <properties class="hudson.model.View$PropertyList"/>
+    </hudson.model.AllView>
+  </views>
+  <primaryView>all</primaryView>
+  <viewsTabBar class="hudson.views.DefaultViewsTabBar"/>
+  <healthMetrics/>
+  <icon class="com.cloudbees.hudson.plugins.folder.icons.StockFolderIcon"/>
+</com.cloudbees.hudson.plugins.folder.Folder>

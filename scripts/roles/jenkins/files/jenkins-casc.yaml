@@ -1,0 +1,78 @@
+jenkins:
+  systemMessage: "Welcome to Jenkins configured as code!"
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "${JENKINS_USER}"
+          password: "${JENKINS_PASSWORD}"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - string:
+              scope: GLOBAL
+              id: "sonarqube_token"
+              secret: "${SONARQUBE_TOKEN}"
+              description: "sonarqube_token"
+          - usernamePassword:
+              scope: GLOBAL
+              id: "shared_library_git_repo"
+              username: "${SHARED_LIBRARY_GIT_REPO_USER}"
+              password: "${SHARED_LIBRARY_GIT_REPO_PASS}"
+              description: "Shared Library Git Repository Credentials"
+          - usernamePassword:
+              scope: GLOBAL
+              id: "jenkins_smtp_credentials"
+              username: "${SMTP_USER}"
+              password: "${SMTP_PASS}"
+              description: "SMTP Credentials for Notifications"
+
+unclassified:
+  sonarGlobalConfiguration:
+    installations:
+      - name: "SonarQube" 
+        serverUrl: "${SONARQUBE_SERVER}"
+        credentialsId: "sonarqube_token"
+  globalLibraries:
+    libraries:
+      - name: "my-shared-lib"
+        retriever:
+          modernSCM:
+            scm:
+              git:
+                remote: "https://github.com/devops-team-neo-tech-it/Devops-Automation-Platform.git"
+                credentialsId: "shared_library_git_repo"
+
+tool:
+  maven:
+    installations:
+      - name: "Maven-3.9.8"
+        properties:
+          - installSource:
+              installers:
+                - maven:
+                    id: "3.9.8"
+
+  sonarRunnerInstallation:
+    installations:
+      - name: "SonarScanner-7.1.0.4889"
+        properties:
+          - installSource:
+              installers:
+                - sonarRunnerInstaller:
+                    id: "7.1.0.4889"
+
+  dependency-check:
+    installations:
+      - name: "DependencyCheck-8.2.1"
+        properties:
+          - installSource:
+              installers:
+                - dependencyCheckInstaller:
+                    id: "8.2.1"
+  

@@ -1,0 +1,28 @@
+- name: Install Java (dependency)
+  apt:
+    name: openjdk-17-jdk
+    state: present
+    update_cache: yes
+
+- name: Add Jenkins repository key
+  apt_key:
+    url: https://pkg.jenkins.io/debian/jenkins.io.key
+    state: absent
+
+- name: Add Jenkins repository
+  apt_repository:
+    repo: deb https://pkg.jenkins.io/debian binary/
+    state: absent
+
+- name: Install Jenkins
+  apt:
+    name: jenkins
+    state: absent
+    update_cache: yes
+
+# - name: Start and enable Jenkins
+#   service:
+#     name: jenkins
+#     state: started
+#     enabled: yes
+#     use: systemd
